@@ -1,20 +1,47 @@
-# Name of this GitHub Actions workflow.
-name: Semgrep
+name: Semgrep Scans with .NET lock files
 
 on:
-  # Scan changed files in PRs (diff-aware scanning):
-  pull_request: {}
-  # Scan on-demand through GitHub Actions interface:
-  workflow_dispatch: {}
-  # Scan mainline branches and report all findings:
+  workflow_dispatch: 
   push:
-    branches: ["master", "main"]
-  # Schedule the CI job (this method uses cron syntax):
-  schedule:
-    - cron: '20 17 * * *' # Sets Semgrep to scan every day at 17:20 UTC.
-    # It is recommended to change the schedule to a random time.
+    branches:
+      - dev # or the default branch you are using
+  pull_request:
+    branches:
+      - dev # or the default branch you are using
 
 jobs:
-  call-semgrep:
-    uses: sebasrevuelta/reusable-workflow/.github/workflows/semgrep.yml@main
-    secrets: inherit
+  restore:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.0.100' # or the version you are using
+
+      - name: Restore dependencies
+        run: dotnet restore -p:RestorePackagesWithLockFile=True
+
+      - name: Upload Lock File    
+        uses: actions/upload-artifact@v3
+        with:
+          name: lockfile
+          path: '**/packages.lock.json'
+  semgrep:
+      needs: restore
+      name: Scan
+      runs-on: ubuntu-20.04
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      container:
+        image: semgrep/semgrep
+      steps:
+      - uses: actions/checkout@v3
+      - name: Download artifact from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: lockfile 
+      - run: semgrep ci
