@@ -79,4 +79,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: lockfile 
-      - run: semgrep ci
+      - run: |
+          tree -P "packages.lock.json"
+          semgrep ci
+          
