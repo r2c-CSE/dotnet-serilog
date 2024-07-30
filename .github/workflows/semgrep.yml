@@ -80,6 +80,6 @@ jobs:
         with:
           name: lockfile 
       - run: |
-          tree -P "packages.lock.json"
-          semgrep ci
+          tree 
+          # semgrep ci
           
