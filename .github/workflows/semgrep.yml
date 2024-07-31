@@ -81,5 +81,5 @@ jobs:
           name: lockfile 
       - run: |
           tree 
-          semgrep ci
+          semgrep ci --verbose
           
